@@ -112,6 +112,7 @@ namespace retro::ranges {
 	};
 
 	template <UnrealStringReservable T>
+		requires (!UnrealReservable<T>)
 	struct ReservableContainerType<T> : ValidType {
 		static constexpr void reserve(T& Container, int32 Size) {
 			Container.Reserve(Size);
