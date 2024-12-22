@@ -1,0 +1,10 @@
+﻿Binaries
+Intermediate
+Source/ThirdParty/RetroLib/include
+conanbuild.bat
+conanbuildenv.bat
+conanrun.sh
+conanrunenv.sh
+deactivate_conanbuild.bat
+deactivate_conanbuild.sh
+deactivate_conanrun.sh
