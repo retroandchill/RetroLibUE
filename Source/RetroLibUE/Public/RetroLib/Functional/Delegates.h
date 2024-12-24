@@ -11,7 +11,7 @@ namespace retro {
 
 		template <typename T>
 			requires std::constructible_from<D, T> && (!std::same_as<std::decay_t<T>, TDelegateInvoker>)
-		constexpr explicit TDelegateInvoker(T&& Delegate) : D(std::forward<T>(Delegate)) {}
+		constexpr explicit TDelegateInvoker(T&& Delegate) : Delegate(std::forward<T>(Delegate)) {}
 
 		template <typename... A>
 		constexpr decltype(auto) operator()(A&&... Args) const {
@@ -28,10 +28,14 @@ namespace retro {
 	};
 
 	template <UEDelegate D>
-	TDelegateInvoker(D) -> TDelegateInvoker<std::decay_t<D>>;
-}
+	TDelegateInvoker(D&&) -> TDelegateInvoker<std::decay_t<D>>;
 
-template <retro::UEDelegate D, typename... A>
-constexpr decltype(auto) create_binding(D&& Delegate, A&&... Args) {
-	return retro::create_binding(retro::TDelegateInvoker(std::forward<D>(Delegate)), std::forward<A>(Args)...);
+	template <UEDelegate D>
+	struct AdditionalBindingTypes<D> : ValidType {
+		template <UEDelegate F, typename... A>
+			requires std::same_as<D, std::decay_t<F>>
+		static constexpr auto bind(F&& Delegate, A&&... Args) {
+			return retro::bind_back(TDelegateInvoker(std::forward<F>(Delegate)), std::forward<A>(Args)...);
+		}
+	};
 }
