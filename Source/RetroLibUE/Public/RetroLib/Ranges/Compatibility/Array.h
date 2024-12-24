@@ -146,17 +146,33 @@ constexpr auto end(const TArray<T, A>& Array) {
 }
 
 constexpr auto begin(FString& String) {
-	return retro::ranges::TArrayIterator(String.GetCharArray().GetData(), String);
+	if constexpr (std::contiguous_iterator<decltype(String.begin())>) {
+		return String.begin();
+	} else {
+		return retro::ranges::TArrayIterator(String.GetCharArray().GetData(), String);
+	}
 }
 
 constexpr auto begin(const FString& String) {
-	return retro::ranges::TArrayIterator(String.GetCharArray().GetData(), String);
+	if constexpr (std::contiguous_iterator<decltype(String.begin())>) {
+		return String.begin();
+	} else {
+		return retro::ranges::TArrayIterator(String.GetCharArray().GetData(), String);
+	}
 }
 
 constexpr auto end(FString& String) {
-	return retro::ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
+	if constexpr (std::contiguous_iterator<decltype(String.end())>) {
+		return String.end();
+	} else {
+		return retro::ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
+	}
 }
 
 constexpr auto end(const FString& String) {
-	return retro::ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
+	if constexpr (std::contiguous_iterator<decltype(String.end())>) {
+		return String.end();
+	} else {
+		return retro::ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
+	}
 }
