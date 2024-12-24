@@ -109,7 +109,7 @@ TEST_CASE_NAMED(FCreateDelegateTest, "RetroLib::Functional::Delegates::Creation"
         static_assert(retro::CanBindStatic<FAddToArray, decltype(&AddValue), int32>);
         static_assert(retro::CanBindLambda<FAddToArray, decltype(&AddValue), int32>);
         TArray<int32> Array;
-        auto Delegate1 = retro::CreateDelegate<FAddToArray>(&AddValue, 4);
+        auto Delegate1 = retro::delegates::Create<FAddToArray>(&AddValue, 4);
         Delegate1.Execute(Array);
         REQUIRE(Array.Num() == 1);
         CHECK(Array[0] == 4);
@@ -118,7 +118,7 @@ TEST_CASE_NAMED(FCreateDelegateTest, "RetroLib::Functional::Delegates::Creation"
         auto Lambda = [Value](TArray<int32> &A) { A.Add(Value); };
         static_assert(!retro::CanBindStatic<FAddToArray, decltype(Lambda)>);
         static_assert(retro::CanBindLambda<FAddToArray, decltype(Lambda)>);
-        auto Delegate2 = retro::CreateDelegate<FAddToArray>(Lambda);
+        auto Delegate2 = retro::delegates::Create<FAddToArray>(Lambda);
         Delegate2.Execute(Array);
         REQUIRE(Array.Num() == 2);
         CHECK(Array[1] == 12);
@@ -132,14 +132,14 @@ TEST_CASE_NAMED(FCreateDelegateTest, "RetroLib::Functional::Delegates::Creation"
         static_assert(!retro::CanBindSPLambda<FGetObjectName, UObject *, FString (UObject::*)() const>);
         static_assert(retro::CanBindRaw<FGetObjectName, UObject *, FString (UObject::*)() const>);
         auto Delegate1 =
-            retro::CreateDelegate<FGetObjectName>(Object, static_cast<FString (UObject::*)() const>(&UObject::GetName));
+            retro::delegates::Create<FGetObjectName>(Object, static_cast<FString (UObject::*)() const>(&UObject::GetName));
         CHECK(Delegate1.Execute() == Object->GetName());
 
         int Value = 12;
         auto Lambda = [&Value] { Value *= 2; };
         static_assert(retro::CanBindWeakLambda<FSimpleDelegate, UObject *, decltype(Lambda)>);
         static_assert(!retro::CanBindSPLambda<FSimpleDelegate, UObject *, decltype(Lambda)>);
-        auto Delegate2 = retro::CreateDelegate<FSimpleDelegate>(Lambda);
+        auto Delegate2 = retro::delegates::Create<FSimpleDelegate>(Lambda);
         Delegate2.Execute();
         CHECK(Value == 24);
     }
@@ -151,18 +151,18 @@ TEST_CASE_NAMED(FCreateDelegateTest, "RetroLib::Functional::Delegates::Creation"
         static_assert(retro::CanBindSP<FAddToValue, TSharedRef<FDemoClass> &, decltype(&FDemoClass::AddToValue)>);
         static_assert(retro::CanBindSP<FAddToValue, FDemoClass *, decltype(&FDemoClass::AddToValue)>);
 
-        auto Delegate1 = retro::CreateDelegate<FAddToValue>(SharedValue, &FDemoClass::AddToValue);
+        auto Delegate1 = retro::delegates::Create<FAddToValue>(SharedValue, &FDemoClass::AddToValue);
         Delegate1.Execute(10);
         CHECK(SharedValue->GetValue() == 22);
 
-        auto Delegate2 = retro::CreateDelegate<FAddToValue>(&SharedValue.Get(), &FDemoClass::AddToValue);
+        auto Delegate2 = retro::delegates::Create<FAddToValue>(&SharedValue.Get(), &FDemoClass::AddToValue);
         Delegate2.Execute(13);
         CHECK(SharedValue->GetValue() == 35);
 
         auto Lambda = [&RawValue = SharedValue.Get()](int32 Value) { RawValue.AddToValue(Value); };
         static_assert(retro::CanBindSPLambda<FAddToValue, TSharedRef<FDemoClass> &, decltype(Lambda)>);
         static_assert(retro::CanBindSPLambda<FAddToValue, FDemoClass *, decltype(Lambda)>);
-        auto Delegate3 = retro::CreateDelegate<FAddToValue>(SharedValue, Lambda);
+        auto Delegate3 = retro::delegates::Create<FAddToValue>(SharedValue, Lambda);
         Delegate3.Execute(15);
         CHECK(SharedValue->GetValue() == 50);
     }
@@ -175,7 +175,7 @@ TEST_CASE_NAMED(FCreateDelegateTest, "RetroLib::Functional::Delegates::Creation"
             !retro::CanBindUObject<FAddToValue, FUnsharedDemoClass *, decltype(&FUnsharedDemoClass::AddToValue)>);
         static_assert(!retro::CanBindSP<FAddToValue, FUnsharedDemoClass *, decltype(&FDemoClass::AddToValue)>);
 
-        auto Delegate1 = retro::CreateDelegate<FAddToValue>(&RawValue, &FUnsharedDemoClass::AddToValue);
+        auto Delegate1 = retro::delegates::Create<FAddToValue>(&RawValue, &FUnsharedDemoClass::AddToValue);
         Delegate1.Execute(10);
         CHECK(RawValue.GetValue() == 22);
     }
@@ -189,7 +189,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(retro::CanBindLambda<FAddToArray, decltype(&AddValue), int32>);
         TArray<int32> Array;
         FAddToArray Delegate1;
-        retro::BindDelegate(Delegate1, &AddValue, 4);
+        retro::delegates::Bind(Delegate1, &AddValue, 4);
         Delegate1.Execute(Array);
         REQUIRE(Array.Num() == 1);
         CHECK(Array[0] == 4);
@@ -199,7 +199,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(!retro::CanBindStatic<FAddToArray, decltype(Lambda)>);
         static_assert(retro::CanBindLambda<FAddToArray, decltype(Lambda)>);
         FAddToArray Delegate2;
-        retro::BindDelegate(Delegate2, Lambda);
+        Delegate2 | retro::delegates::Bind(Lambda);
         Delegate2.Execute(Array);
         REQUIRE(Array.Num() == 2);
         CHECK(Array[1] == 12);
@@ -213,7 +213,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(!retro::CanBindSPLambda<FGetObjectName, UObject *, FString (UObject::*)() const>);
         static_assert(retro::CanBindRaw<FGetObjectName, UObject *, FString (UObject::*)() const>);
         FGetObjectName Delegate1;
-        retro::BindDelegate(Delegate1, Object, static_cast<FString (UObject::*)() const>(&UObject::GetName));
+        retro::delegates::Bind(Delegate1, Object, static_cast<FString (UObject::*)() const>(&UObject::GetName));
         CHECK(Delegate1.Execute() == Object->GetName());
 
         int Value = 12;
@@ -221,7 +221,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(retro::CanBindWeakLambda<FSimpleDelegate, UObject *, decltype(Lambda)>);
         static_assert(!retro::CanBindSPLambda<FSimpleDelegate, UObject *, decltype(Lambda)>);
         FSimpleDelegate Delegate2;
-        retro::BindDelegate(Delegate2, Lambda);
+        retro::delegates::Bind(Delegate2, Lambda);
         Delegate2.Execute();
         CHECK(Value == 24);
     }
@@ -234,12 +234,12 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(retro::CanBindSP<FAddToValue, FDemoClass *, decltype(&FDemoClass::AddToValue)>);
 
         FAddToValue Delegate1;
-        retro::BindDelegate(Delegate1, SharedValue, &FDemoClass::AddToValue);
+        retro::delegates::Bind(Delegate1, SharedValue, &FDemoClass::AddToValue);
         Delegate1.Execute(10);
         CHECK(SharedValue->GetValue() == 22);
 
         FAddToValue Delegate2;
-        retro::BindDelegate(Delegate2, &SharedValue.Get(), &FDemoClass::AddToValue);
+        retro::delegates::Bind(Delegate2, &SharedValue.Get(), &FDemoClass::AddToValue);
         Delegate2.Execute(13);
         CHECK(SharedValue->GetValue() == 35);
 
@@ -247,7 +247,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(retro::CanBindSPLambda<FAddToValue, TSharedRef<FDemoClass> &, decltype(Lambda)>);
         static_assert(retro::CanBindSPLambda<FAddToValue, FDemoClass *, decltype(Lambda)>);
         FAddToValue Delegate3;
-        retro::BindDelegate(Delegate3, SharedValue, Lambda);
+        retro::delegates::Bind(Delegate3, SharedValue, Lambda);
         Delegate3.Execute(15);
         CHECK(SharedValue->GetValue() == 50);
     }
@@ -261,7 +261,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         static_assert(!retro::CanBindSP<FAddToValue, FUnsharedDemoClass *, decltype(&FDemoClass::AddToValue)>);
 
         FAddToValue Delegate1;
-        retro::BindDelegate(Delegate1, &RawValue, &FUnsharedDemoClass::AddToValue);
+        retro::delegates::Bind(Delegate1, &RawValue, &FUnsharedDemoClass::AddToValue);
         Delegate1.Execute(10);
         CHECK(RawValue.GetValue() == 22);
     }

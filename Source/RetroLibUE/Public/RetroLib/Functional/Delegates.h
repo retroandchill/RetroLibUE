@@ -4,6 +4,7 @@
 
 #include "RetroLib/Concepts/Delegates.h"
 #include "RetroLib/Functional/CreateBinding.h"
+#include "RetroLib/Functional/ExtensionMethods.h"
 #include "RetroLib/Utils/Unreachable.h"
 
 namespace retro {
@@ -16,15 +17,16 @@ namespace retro {
         }
 
         template <typename... A>
-        constexpr decltype(auto) operator()(A &&...Args) const {
+        constexpr decltype(auto) operator()(A &&... Args) const {
             if constexpr (UnicastDelegate<D>) {
-                check(Delegate.IsBound()) return Delegate.Execute(std::forward<A>(Args)...);
+                check(Delegate.IsBound())
+                return Delegate.Execute(std::forward<A>(Args)...);
             } else if constexpr (MulticastDelegate<D>) {
                 return Delegate.Broadcast(std::forward<A>(Args)...);
             }
         }
 
-      private:
+    private:
         D Delegate;
     };
 
@@ -35,65 +37,74 @@ namespace retro {
     struct AdditionalBindingTypes<D> : ValidType {
         template <UEDelegate F, typename... A>
             requires std::same_as<D, std::decay_t<F>>
-        static constexpr auto bind(F &&Delegate, A &&...Args) {
+        static constexpr auto bind(F &&Delegate, A &&... Args) {
             return retro::bind_back(TDelegateInvoker(std::forward<F>(Delegate)), std::forward<A>(Args)...);
         }
     };
 
-    template <UEDelegate D, typename F, typename... A>
-        requires CanBindFree<D, F, A...>
-    D CreateDelegate(F &&Functor, A &&...Args) {
-        if constexpr (CanBindStatic<D, F, A...>) {
-            return D::CreateStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else {
-            static_assert(CanBindLambda<D, F, A...>);
-            return D::CreateLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
+    namespace delegates {
+        template <UEDelegate D, typename F, typename... A>
+            requires CanBindFree<D, F, A...>
+        D Create(F &&Functor, A &&... Args) {
+            if constexpr (CanBindStatic<D, F, A...>) {
+                return D::CreateStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
+            } else {
+                static_assert(CanBindLambda<D, F, A...>);
+                return D::CreateLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
+            }
         }
-    }
 
-    template <UEDelegate D, typename O, typename F, typename... A>
-        requires CanBindMember<D, O, F, A...>
-    D CreateDelegate(O &&Object, F &&Functor, A &&...Args) {
-        if constexpr (CanBindSP<D, O, F, A...>) {
-            return D::CreateSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else if constexpr (CanBindSPLambda<D, O, F, A...>) {
-            return D::CreateSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else if constexpr (CanBindUObject<D, O, F, A...>) {
-            return D::CreateUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else if constexpr (CanBindWeakLambda<D, O, F, A...>) {
-            return D::CreateWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else {
-            static_assert(CanBindRaw<D, O, F, A...>);
-            return D::CreateRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+        template <UEDelegate D, typename O, typename F, typename... A>
+            requires CanBindMember<D, O, F, A...>
+        D Create(O &&Object, F &&Functor, A &&... Args) {
+            if constexpr (CanBindSP<D, O, F, A...>) {
+                return D::CreateSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            } else if constexpr (CanBindSPLambda<D, O, F, A...>) {
+                return D::CreateSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            } else if constexpr (CanBindUObject<D, O, F, A...>) {
+                return D::CreateUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            } else if constexpr (CanBindWeakLambda<D, O, F, A...>) {
+                return D::CreateWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            } else {
+                static_assert(CanBindRaw<D, O, F, A...>);
+                return D::CreateRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            }
         }
-    }
 
-    template <UEDelegate D, typename F, typename... A>
-        requires CanBindFree<D, F, A...>
-    void BindDelegate(D& Delegate, F &&Functor, A &&...Args) {
-        if constexpr (CanBindStatic<D, F, A...>) {
-            return Delegate.BindStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else {
-            static_assert(CanBindLambda<D, F, A...>);
-            return Delegate.BindLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
-        }
-    }
+        struct FDelegateBinder {
+            template <UEDelegate D, typename F, typename... A>
+                requires CanBindFree<D, F, A...>
+            void operator()(D &Delegate, F &&Functor, A &&... Args) const {
+                if constexpr (CanBindStatic<D, F, A...>) {
+                    return Delegate.BindStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
+                } else {
+                    static_assert(CanBindLambda<D, F, A...>);
+                    return Delegate.BindLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
+                }
+            }
 
-    template <UEDelegate D, typename O, typename F, typename... A>
-        requires CanBindMember<D, O, F, A...>
-    void BindDelegate(D& Delegate, O &&Object, F &&Functor, A &&...Args) {
-        if constexpr (CanBindSP<D, O, F, A...>) {
-            return Delegate.BindSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else if constexpr (CanBindSPLambda<D, O, F, A...>) {
-            return Delegate.BindSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else if constexpr (CanBindUObject<D, O, F, A...>) {
-            return Delegate.BindUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else if constexpr (CanBindWeakLambda<D, O, F, A...>) {
-            return Delegate.BindWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        } else {
-            static_assert(CanBindRaw<D, O, F, A...>);
-            return Delegate.BindRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
-        }
+            template <UEDelegate D, typename O, typename F, typename... A>
+                requires CanBindMember<D, O, F, A...>
+            void operator()(D &Delegate, O &&Object, F &&Functor, A &&... Args) const {
+                if constexpr (CanBindSP<D, O, F, A...>) {
+                    return Delegate.BindSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+                } else if constexpr (CanBindSPLambda<D, O, F, A...>) {
+                    return Delegate.BindSPLambda(std::forward<O>(Object), std::forward<F>(Functor),
+                                                 std::forward<A>(Args)...);
+                } else if constexpr (CanBindUObject<D, O, F, A...>) {
+                    return Delegate.BindUObject(std::forward<O>(Object), std::forward<F>(Functor),
+                                                std::forward<A>(Args)...);
+                } else if constexpr (CanBindWeakLambda<D, O, F, A...>) {
+                    return Delegate.BindWeakLambda(std::forward<O>(Object), std::forward<F>(Functor),
+                                                   std::forward<A>(Args)...);
+                } else {
+                    static_assert(CanBindRaw<D, O, F, A...>);
+                    return Delegate.BindRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+                }
+            }
+        };
+
+        constexpr auto Bind = extension_method<FDelegateBinder{}>;
     }
 
 } // namespace retro
