@@ -6,35 +6,35 @@
 #include "RetroLib/Utils/ForwardLike.h"
 
 namespace retro::optionals {
-	template <typename T>
-	concept UnrealOptional = requires(T&& Optional) {
-		Optional.GetValue();
-		*Optional;
-		Optional.operator->();
-		{ Optional.IsSet() } -> std::same_as<bool>;
-	};
+    template <typename T>
+    concept UnrealOptional = requires(T &&Optional) {
+        Optional.GetValue();
+        *Optional;
+        Optional.operator->();
+        { Optional.IsSet() } -> std::same_as<bool>;
+    };
 
     template <UnrealOptional T>
     struct OptionalOperations<T> : ValidType {
         template <UnrealOptional O>
             requires std::same_as<T, std::decay_t<O>>
-        static constexpr decltype(auto) get(O&& Optional) {
+        static constexpr decltype(auto) get(O &&Optional) {
             return retro::forward_like<O>(*Optional);
         }
 
         template <UnrealOptional O>
             requires std::same_as<T, std::decay_t<O>>
-        static constexpr decltype(auto) get_value(O&& Optional) {
+        static constexpr decltype(auto) get_value(O &&Optional) {
             return retro::forward_like<O>(Optional.GetValue());
         }
 
         template <UnrealOptional O>
             requires std::same_as<T, std::decay_t<O>>
-        static constexpr bool has_value(const O& Optional) {
+        static constexpr bool has_value(const O &Optional) {
             return Optional.IsSet();
         }
     };
-}
+} // namespace retro::optionals
 
 /**
  * Template specialization for an optional that takes in a reference.
@@ -136,8 +136,7 @@ struct TOptional<T &> {
      * @return The retrieved value
      */
     T &GetValue() const {
-        check(Data != nullptr)
-        return *Data;
+        check(Data != nullptr) return *Data;
     }
 
     /**
@@ -160,8 +159,7 @@ struct TOptional<T &> {
      * @return A reference to the underlying data.
      */
     T &operator*() {
-        check(Data != nullptr)
-        return *Data;
+        check(Data != nullptr) return *Data;
     }
 
     /**
@@ -169,8 +167,7 @@ struct TOptional<T &> {
      * @return A reference to the underlying data.
      */
     T &operator*() const {
-        check(Data != nullptr)
-        return *Data;
+        check(Data != nullptr) return *Data;
     }
 
     /**
@@ -178,8 +175,7 @@ struct TOptional<T &> {
      * @return A pointer to the underlying data.
      */
     T *operator->() {
-        check(Data != nullptr)
-        return Data;
+        check(Data != nullptr) return Data;
     }
 
     /**
@@ -187,8 +183,7 @@ struct TOptional<T &> {
      * @return A pointer to the underlying data.
      */
     T *operator->() const {
-        check(Data != nullptr)
-        return Data;
+        check(Data != nullptr) return Data;
     }
 
   private:

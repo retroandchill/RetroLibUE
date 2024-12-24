@@ -4,11 +4,9 @@
 
 #include "Modules/ModuleManager.h"
 
-class FRetroLibUEModule : public IModuleInterface
-{
-public:
-
-	/** IModuleInterface implementation */
-	virtual void StartupModule() override;
-	virtual void ShutdownModule() override;
+class FRetroLibUEModule : public IModuleInterface {
+  public:
+    /** IModuleInterface implementation */
+    virtual void StartupModule() override;
+    virtual void ShutdownModule() override;
 };
