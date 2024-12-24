@@ -68,4 +68,32 @@ namespace retro {
         }
     }
 
+    template <UEDelegate D, typename F, typename... A>
+        requires CanBindFree<D, F, A...>
+    void BindDelegate(D& Delegate, F &&Functor, A &&...Args) {
+        if constexpr (CanBindStatic<D, F, A...>) {
+            return Delegate.BindStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
+        } else {
+            static_assert(CanBindLambda<D, F, A...>);
+            return Delegate.BindLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
+        }
+    }
+
+    template <UEDelegate D, typename O, typename F, typename... A>
+        requires CanBindMember<D, O, F, A...>
+    void BindDelegate(D& Delegate, O &&Object, F &&Functor, A &&...Args) {
+        if constexpr (CanBindSP<D, O, F, A...>) {
+            return Delegate.BindSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+        } else if constexpr (CanBindSPLambda<D, O, F, A...>) {
+            return Delegate.BindSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+        } else if constexpr (CanBindUObject<D, O, F, A...>) {
+            return Delegate.BindUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+        } else if constexpr (CanBindWeakLambda<D, O, F, A...>) {
+            return Delegate.BindWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+        } else {
+            static_assert(CanBindRaw<D, O, F, A...>);
+            return Delegate.BindRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+        }
+    }
+
 } // namespace retro

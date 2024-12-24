@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include "RetroLib/TypeTraits.h"
+
 namespace retro {
     /**
      * Concept to check if a delegate is a native (single binding) delegate.
