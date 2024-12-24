@@ -2,8 +2,10 @@
 
 #pragma once
 
+#include "Containers/Map.h"
 #include "RetroLib/Ranges/Concepts/Containers.h"
 #include "RetroLib/Ranges/Compatibility/ForEachRange.h"
+#include "RetroLib/Ranges/Algorithm/To.h"
 
 #include "Traits/IsContiguousContainer.h"
 
@@ -54,7 +56,23 @@ namespace retro::ranges {
 		container.GetAllocatedSize();
 	};
 
-	
+	template <>
+	struct FromRange<TArray> {
+		template <typename R>
+		using Invoke = TArray<std::decay_t<std::ranges::range_value_t<R>>>;
+	};
+
+	template <>
+	struct FromRange<TSet> {
+		template <typename R>
+		using Invoke = TSet<std::decay_t<std::ranges::range_value_t<R>>>;
+	};
+
+	template <>
+	struct FromRange<TMap> {
+		template <typename R>
+		using Invoke = TMap<std::decay_t<std::tuple_element_t<0, std::ranges::range_value_t<R>>>, std::decay_t<std::tuple_element_t<1, std::ranges::range_value_t<R>>>>;
+	};
 }
 
 template <retro::ranges::UnrealSizedContainer R>
@@ -93,6 +111,15 @@ namespace retro::ranges {
 			} else if constexpr (retro::ranges::UnrealAddable<C, T>) {
 				return Container += std::forward<T>(Value);
 			}
+		}
+	};
+
+	template <typename K, typename V, typename A, typename F>
+	struct AppendableContainerType<TMap<K, V, A, F>> : ValidType {
+		template <typename T>
+			requires retro::ranges::UnrealAppendable<TMap<K, V, A, F>, T> && TupleLike<std::decay_t<T>> && (std::tuple_size_v<std::decay_t<T>> == 2)
+		static constexpr decltype(auto) append(TMap<K, V, A, F>& Container, T &&Value) {
+			Container.Emplace(get<0>(std::forward<T>(Value)), get<1>(std::forward<T>(Value)));
 		}
 	};
 	
