@@ -13,8 +13,11 @@ namespace retro::testing::delegates {
     DECLARE_MULTICAST_DELEGATE_TwoParams(FDemoMulticastDelegate, FStringView, int32);
     DECLARE_DELEGATE_RetVal(FString, FGetObjectName);
     DECLARE_DELEGATE_OneParam(FAddToValue, int32)
-
-        DECLARE_DELEGATE_OneParam(FAddToArray, TArray<int32> &);
+    DECLARE_DELEGATE_OneParam(FAddToArray, TArray<int32> &);
+    
+    DECLARE_MULTICAST_DELEGATE_OneParam(FMultiGetObjectName, FString&);
+    DECLARE_MULTICAST_DELEGATE_OneParam(FMultiAddToValue, int32)
+    DECLARE_MULTICAST_DELEGATE_OneParam(FMultiAddToArray, TArray<int32> &);
 
     static_assert(retro::delegates::NativeDelegate<FDemoDelegate>);
     static_assert(retro::delegates::UnicastDelegate<FDemoDelegate>);
@@ -263,6 +266,91 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
         FAddToValue Delegate1;
         retro::delegates::Bind(Delegate1, &RawValue, &FUnsharedDemoClass::AddToValue);
         Delegate1.Execute(10);
+        CHECK(RawValue.GetValue() == 22);
+    }
+}
+
+TEST_CASE_NAMED(FAddDelegateTest, "RetroLib::Functional::Delegates::Adding", "[RetroLib][Functional]") {
+    using namespace retro::testing::delegates;
+
+    SECTION("Can bind free functions and lambdas") {
+        static_assert(retro::delegates::CanAddStatic<FMultiAddToArray, decltype(&AddValue), int32>);
+        static_assert(retro::delegates::CanAddLambda<FMultiAddToArray, decltype(&AddValue), int32>);
+        TArray<int32> Array;
+        FMultiAddToArray Delegate1;
+        retro::delegates::Add(Delegate1, &AddValue, 4);
+        Delegate1.Broadcast(Array);
+        REQUIRE(Array.Num() == 1);
+        CHECK(Array[0] == 4);
+
+        int Value = 12;
+        auto Lambda = [Value](TArray<int32> &A) { A.Add(Value); };
+        static_assert(!retro::delegates::CanAddStatic<FMultiAddToArray, decltype(Lambda)>);
+        static_assert(retro::delegates::CanAddLambda<FMultiAddToArray, decltype(Lambda)>);
+        FMultiAddToArray Delegate2;
+        Delegate2 | retro::delegates::Add(Lambda);
+        Delegate2.Broadcast(Array);
+        REQUIRE(Array.Num() == 2);
+        CHECK(Array[1] == 12);
+    }
+
+    SECTION("Can bind UObject members") {
+        auto Object = NewObject<UObject>();
+        static_assert(retro::delegates::CanAddUObject<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);
+        static_assert(!retro::delegates::CanAddWeakLambda<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);
+        static_assert(!retro::delegates::CanAddSP<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);
+        static_assert(!retro::delegates::CanAddSPLambda<FMultiGetObjectName, UObject *,void (UObject::*)(FString&) const>);
+        static_assert(retro::delegates::CanAddRaw<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);
+        FMultiGetObjectName Delegate1;
+        retro::delegates::Add(Delegate1, Object, static_cast<void (UObject::*)(FString&) const>(&UObject::GetName));
+        FString Name;
+        Delegate1.Broadcast(Name);
+        CHECK(Name == Object->GetName());
+
+        int Value = 12;
+        auto Lambda = [&Value] { Value *= 2; };
+        static_assert(retro::delegates::CanAddWeakLambda<FSimpleMulticastDelegate, UObject *, decltype(Lambda)>);
+        static_assert(!retro::delegates::CanAddSPLambda<FSimpleMulticastDelegate, UObject *, decltype(Lambda)>);
+        FSimpleMulticastDelegate Delegate2;
+        retro::delegates::Add(Delegate2, Lambda);
+        Delegate2.Broadcast();
+        CHECK(Value == 24);
+    }
+
+    SECTION("Can bind to shared pointers") {
+        auto SharedValue = MakeShared<FDemoClass>(12);
+        static_assert(retro::delegates::CanAddSP<FMultiAddToValue, TSharedRef<FDemoClass> &, decltype(&FDemoClass::AddToValue)>);
+        static_assert(retro::delegates::CanAddSP<FMultiAddToValue, FDemoClass *, decltype(&FDemoClass::AddToValue)>);
+
+        FMultiAddToValue Delegate1;
+        retro::delegates::Add(Delegate1, SharedValue, &FDemoClass::AddToValue);
+        Delegate1.Broadcast(10);
+        CHECK(SharedValue->GetValue() == 22);
+
+        FMultiAddToValue Delegate2;
+        retro::delegates::Add(Delegate2, &SharedValue.Get(), &FDemoClass::AddToValue);
+        Delegate2.Broadcast(13);
+        CHECK(SharedValue->GetValue() == 35);
+
+        auto Lambda = [&RawValue = SharedValue.Get()](int32 Value) { RawValue.AddToValue(Value); };
+        static_assert(retro::delegates::CanAddSPLambda<FMultiAddToValue, FDemoClass *, decltype(Lambda)>);
+        FMultiAddToValue Delegate3;
+        retro::delegates::Add(Delegate3, &SharedValue.Get(), Lambda);
+        Delegate3.Broadcast(15);
+        CHECK(SharedValue->GetValue() == 50);
+    }
+
+    SECTION("Can bind to raw pointers") {
+        FUnsharedDemoClass RawValue(12);
+
+        static_assert(retro::delegates::CanAddRaw<FMultiAddToValue, FUnsharedDemoClass *, decltype(&FUnsharedDemoClass::AddToValue)>);
+        static_assert(
+            !retro::delegates::CanAddUObject<FMultiAddToValue, FUnsharedDemoClass *, decltype(&FUnsharedDemoClass::AddToValue)>);
+        static_assert(!retro::delegates::CanAddSP<FMultiAddToValue, FUnsharedDemoClass *, decltype(&FDemoClass::AddToValue)>);
+
+        FMultiAddToValue Delegate1;
+        retro::delegates::Add(Delegate1, &RawValue, &FUnsharedDemoClass::AddToValue);
+        Delegate1.Broadcast(10);
         CHECK(RawValue.GetValue() == 22);
     }
 }

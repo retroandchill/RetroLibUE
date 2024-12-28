@@ -5,7 +5,6 @@
 #include "RetroLib/Concepts/Delegates.h"
 #include "RetroLib/Functional/CreateBinding.h"
 #include "RetroLib/Functional/ExtensionMethods.h"
-#include "RetroLib/Utils/Unreachable.h"
 
 namespace retro {
     namespace delegates
@@ -75,7 +74,7 @@ namespace retro {
         }
 
         struct FDelegateBinder {
-            template <UEDelegate D, typename F, typename... A>
+            template <NativeUnicastDelegate D, typename F, typename... A>
                 requires CanBindFree<D, F, A...>
             void operator()(D &Delegate, F &&Functor, A &&... Args) const {
                 if constexpr (CanBindStatic<D, F, A...>) {
@@ -86,7 +85,7 @@ namespace retro {
                 }
             }
 
-            template <UEDelegate D, typename O, typename F, typename... A>
+            template <NativeUnicastDelegate D, typename O, typename F, typename... A>
                 requires CanBindMember<D, O, F, A...>
             void operator()(D &Delegate, O &&Object, F &&Functor, A &&... Args) const {
                 if constexpr (CanBindSP<D, O, F, A...>) {
@@ -108,6 +107,47 @@ namespace retro {
         };
 
         constexpr auto Bind = extension_method<FDelegateBinder{}>;
+
+        struct FDelegateAdder {
+            template <MulticastDelegate D, UnicastDelegate O>
+                requires BindableTo<D, O>
+            decltype(auto) operator()(D& Delegate, O &&Binding) const {
+                return Delegate.Add(std::forward<O>(Binding));
+            }
+            
+            template <NativeMulitcastDelegate D, typename F, typename... A>
+                requires CanAddFree<D, F, A...>
+            FDelegateHandle operator()(D &Delegate, F &&Functor, A &&... Args) const {
+                if constexpr (CanAddStatic<D, F, A...>) {
+                    return Delegate.AddStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
+                } else {
+                    static_assert(CanAddLambda<D, F, A...>);
+                    return Delegate.AddLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
+                }
+            }
+
+            template <NativeMulitcastDelegate D, typename O, typename F, typename... A>
+                requires CanAddMember<D, O, F, A...>
+            FDelegateHandle operator()(D &Delegate, O &&Object, F &&Functor, A &&... Args) const {
+                if constexpr (CanAddSP<D, O, F, A...>) {
+                    return Delegate.AddSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+                } else if constexpr (CanAddSPLambda<D, O, F, A...>) {
+                    return Delegate.AddSPLambda(std::forward<O>(Object), std::forward<F>(Functor),
+                                                 std::forward<A>(Args)...);
+                } else if constexpr (CanAddUObject<D, O, F, A...>) {
+                    return Delegate.AddUObject(std::forward<O>(Object), std::forward<F>(Functor),
+                                                std::forward<A>(Args)...);
+                } else if constexpr (CanAddWeakLambda<D, O, F, A...>) {
+                    return Delegate.AddWeakLambda(std::forward<O>(Object), std::forward<F>(Functor),
+                                                   std::forward<A>(Args)...);
+                } else {
+                    static_assert(CanAddRaw<D, O, F, A...>);
+                    return Delegate.AddRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+                }
+            }
+        };
+
+        constexpr auto Add = extension_method<FDelegateAdder{}>;
     }
 
 } // namespace retro
