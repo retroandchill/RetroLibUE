@@ -50,23 +50,7 @@ namespace retro::ranges {
         };
 
     template <>
-    struct FromRange<TArray> {
-        template <typename R>
-        using Invoke = TArray<std::decay_t<std::ranges::range_value_t<R>>>;
-    };
-
-    template <>
-    struct FromRange<TSet> {
-        template <typename R>
-        using Invoke = TSet<std::decay_t<std::ranges::range_value_t<R>>>;
-    };
-
-    template <>
-    struct FromRange<TMap> {
-        template <typename R>
-        using Invoke = TMap<std::decay_t<std::tuple_element_t<0, std::ranges::range_value_t<R>>>,
-                            std::decay_t<std::tuple_element_t<1, std::ranges::range_value_t<R>>>>;
-    };
+    struct IsMap<TMap> : std::true_type {};
 } // namespace retro::ranges
 
 template <retro::ranges::UnrealSizedContainer R>

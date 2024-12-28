@@ -4,7 +4,7 @@
 
 #include "RetroLib/TypeTraits.h"
 
-namespace retro {
+namespace retro::delegates {
     /**
      * Concept to check if a delegate is a native (single binding) delegate.
      *
