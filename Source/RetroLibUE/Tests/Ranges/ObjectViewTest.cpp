@@ -32,7 +32,7 @@ TEST_CASE_NAMED(FClassViewTest, "RetroLib::Ranges::Views::ClassView", "[RetroLib
 		auto ActorClasses = retro::ranges::TClassView<ISlateTextureAtlasInterface>() |
 				retro::ranges::to<TArray>();
 		CHECK(ActorClasses.Num() > 0);
-		CHECK(std::ranges::all_of(ActorClasses, [](const UClass* Class) { return Class->IsChildOf<AActor>(); }));
+		CHECK(std::ranges::all_of(ActorClasses, [](const UClass* Class) { return Class->ImplementsInterface(USlateTextureAtlasInterface::StaticClass()); }));
 	}
 }
 
