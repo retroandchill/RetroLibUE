@@ -9,7 +9,7 @@ namespace retro::ranges {
 		requires std::derived_from<T, UObject> || UnrealInterface<T>
 	class TClassView {
 		struct FIterator {
-			using value_type = TSubclassOf<T>;
+			using value_type = std::conditional_t<std::derived_from<T, UObject>, TSubclassOf<T>, UClass*>;
 			using difference_type = std::ptrdiff_t;
 
 			FIterator() = default;
@@ -22,7 +22,11 @@ namespace retro::ranges {
 			FIterator& operator=(const FIterator&) = delete;
 			FIterator& operator=(FIterator&&) = default;
 
-			TSubclassOf<T> operator*() const {
+			TSubclassOf<T> operator*() const requires std::derived_from<T, UObject> {
+				return *Source;
+			}
+
+			UClass* operator*() const requires UnrealInterface<T> {
 				return *Source;
 			}
 
@@ -68,7 +72,7 @@ namespace retro::ranges {
 		TClassView() = default;
 
 		FIterator begin() const {
-			return Iterator();
+			return FIterator();
 		}
 
 		std::default_sentinel_t end() const {

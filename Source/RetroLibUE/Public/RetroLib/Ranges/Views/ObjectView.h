@@ -51,7 +51,7 @@ namespace retro::ranges {
 		TObjectView() = default;
 
 		FIterator begin() const {
-			return Iterator();
+			return FIterator();
 		}
 
 		std::default_sentinel_t end() const {

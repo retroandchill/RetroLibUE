@@ -5,6 +5,7 @@
 #include "RetroLib/Ranges/Compatibility/Array.h"
 #include "Tests/TestHarnessAdapter.h"
 #include "RetroLib/Ranges/Views/ClassView.h"
+#include "Slate/SlateTextureAtlasInterface.h"
 
 TEST_CASE_NAMED(FObjectViewTest, "RetroLib::Ranges::Views::ObjectView", "[RetroLib][Ranges]") {
 	SECTION("Can iterate over a view of objects") {
@@ -21,6 +22,14 @@ TEST_CASE_NAMED(FClassViewTest, "RetroLib::Ranges::Views::ClassView", "[RetroLib
 	SECTION("Can iterate over a view of classes") {
 		static_assert(std::ranges::input_range<retro::ranges::TClassView<AActor>>);
 		auto ActorClasses = retro::ranges::TClassView<AActor>() |
+				retro::ranges::to<TArray>();
+		CHECK(ActorClasses.Num() > 0);
+		CHECK(std::ranges::all_of(ActorClasses, [](const UClass* Class) { return Class->IsChildOf<AActor>(); }));
+	}
+
+	SECTION("Can iterate over a view of classes") {
+		static_assert(std::ranges::input_range<retro::ranges::TClassView<ISlateTextureAtlasInterface>>);
+		auto ActorClasses = retro::ranges::TClassView<ISlateTextureAtlasInterface>() |
 				retro::ranges::to<TArray>();
 		CHECK(ActorClasses.Num() > 0);
 		CHECK(std::ranges::all_of(ActorClasses, [](const UClass* Class) { return Class->IsChildOf<AActor>(); }));
