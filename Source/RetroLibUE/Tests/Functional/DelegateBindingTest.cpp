@@ -128,7 +128,7 @@ TEST_CASE_NAMED(FCreateDelegateTest, "RetroLib::Functional::Delegates::Creation"
     }
 
     SECTION("Can bind UObject members") {
-        auto Object = NewObject<UObject>();
+        auto Object = NewObject<UDataTable>();
         static_assert(retro::delegates::CanBindUObject<FGetObjectName, UObject *, FString (UObject::*)() const>);
         static_assert(!retro::delegates::CanBindWeakLambda<FGetObjectName, UObject *, FString (UObject::*)() const>);
         static_assert(!retro::delegates::CanBindSP<FGetObjectName, UObject *, FString (UObject::*)() const>);
@@ -209,7 +209,7 @@ TEST_CASE_NAMED(FBindDelegateTest, "RetroLib::Functional::Delegates::Binding", "
     }
 
     SECTION("Can bind UObject members") {
-        auto Object = NewObject<UObject>();
+        auto Object = NewObject<UDataTable>();
         static_assert(retro::delegates::CanBindUObject<FGetObjectName, UObject *, FString (UObject::*)() const>);
         static_assert(!retro::delegates::CanBindWeakLambda<FGetObjectName, UObject *, FString (UObject::*)() const>);
         static_assert(!retro::delegates::CanBindSP<FGetObjectName, UObject *, FString (UObject::*)() const>);
@@ -295,7 +295,7 @@ TEST_CASE_NAMED(FAddDelegateTest, "RetroLib::Functional::Delegates::Adding", "[R
     }
 
     SECTION("Can bind UObject members") {
-        auto Object = NewObject<UObject>();
+        auto Object = NewObject<UDataTable>();
         static_assert(retro::delegates::CanAddUObject<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);
         static_assert(!retro::delegates::CanAddWeakLambda<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);
         static_assert(!retro::delegates::CanAddSP<FMultiGetObjectName, UObject *, void (UObject::*)(FString&) const>);

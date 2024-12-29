@@ -2,6 +2,8 @@
 
 #pragma once
 
+#include <RetroLib/Optionals/OptionalIterator.h>
+
 #include "RetroLib/Optionals/OptionalOperations.h"
 #include "RetroLib/Utils/ForwardLike.h"
 
@@ -192,3 +194,23 @@ struct TOptional<T &> {
 
 template <>
 struct retro::optionals::IsRawReferenceOptionalAllowed<TOptional> : std::true_type {};
+
+template <typename T>
+constexpr auto begin(TOptional<T>& Optional) {
+    return retro::optionals::OptionalIterator(Optional);
+}
+
+template <typename T>
+constexpr auto begin(const TOptional<T>& Optional) {
+    return retro::optionals::OptionalIterator(Optional);
+}
+
+template <typename T>
+[[noreturn]] constexpr auto begin(TOptional<T>&&) {
+    static_assert(false, "Cannot iterate over an r-value TOptional value");
+}
+
+template <typename T>
+constexpr auto end(const TOptional<T>&) {
+    return retro::optionals::OptionalSentinel();
+}
