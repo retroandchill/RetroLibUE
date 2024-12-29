@@ -5,12 +5,7 @@
 #include "RetroLib/Casting/ClassCast.h"
 #include "RetroLib/Concepts/Interfaces.h"
 
-namespace retro {
-	template <std::derived_from<UObject> T>
-	struct InstanceOf<T> {
-		
-	};
-
+namespace Retro {
 	template <std::derived_from<UObject> T>
 	struct InstanceChecker<T> {
 		/**

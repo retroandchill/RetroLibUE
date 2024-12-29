@@ -3,7 +3,7 @@
 #include <UObject/UObjectIterator.h>
 #include "RetroLib/Concepts/Interfaces.h"
 
-namespace retro::ranges {
+namespace Retro::Ranges {
 	
 	template <typename T>
 		requires std::derived_from<T, UObject> || UnrealInterface<T>

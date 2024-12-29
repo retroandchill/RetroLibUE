@@ -14,36 +14,36 @@ TEST_CASE_NAMED(FOptionalPipesTest, "RetroLib::Optionals::Pipes", "[RetroLib][Op
 	SECTION("Can pipe an TOptional object") {
 		TOptional Value = 4;
 		auto Result = Value |
-			retro::optionals::transform([](int i) { return i * 2; }) |
-				retro::optionals::value;
+			Retro::Optionals::Transform([](int i) { return i * 2; }) |
+				Retro::Optionals::Value;
 		CHECK(Result == 8);
 
 		Value.Reset();
 		Result = Value |
-			retro::optionals::transform([](int i) { return i * 2; }) |
-				retro::optionals::or_else_value(12);
+			Retro::Optionals::Transform([](int i) { return i * 2; }) |
+				Retro::Optionals::OrElseValue(12);
 		CHECK(Result == 12);
 	}
 
 	SECTION("Can pipe a retro::Optional and std::optional into TOptional") {
-		retro::Optional Value1 = 3;
+		Retro::Optional Value1 = 3;
 		auto AsUeOptional1 = Value1 |
-			retro::optionals::to<TOptional>();
+			Retro::Optionals::To<TOptional>();
 		CHECK(AsUeOptional1.GetValue() == 3);
 
-		auto Value2 = retro::optionals::make_optional_reference(Value1);
+		auto Value2 = Retro::Optionals::MakeOptionalReference(Value1);
 		auto AsUeOptional2 = Value2 |
-			retro::optionals::to<TOptional>();
+			Retro::Optionals::To<TOptional>();
 		CHECK(AsUeOptional2.GetValue() == 3);
 
 		std::optional Value3 = 5;
 		auto AsUeOptional3 = Value3 |
-			retro::optionals::to<TOptional>();
+			Retro::Optionals::To<TOptional>();
 		CHECK(AsUeOptional3.GetValue() == 5);
 
-		auto Value4 = retro::optionals::make_optional_reference(Value3);
+		auto Value4 = Retro::Optionals::MakeOptionalReference(Value3);
 		auto AsUeOptional4 = Value4 |
-			retro::optionals::to<TOptional>();
+			Retro::Optionals::To<TOptional>();
 		CHECK(AsUeOptional4.GetValue() == 5);
 	}
 
@@ -51,14 +51,14 @@ TEST_CASE_NAMED(FOptionalPipesTest, "RetroLib::Optionals::Pipes", "[RetroLib][Op
 		static_assert(std::ranges::input_range<TOptional<int32>>);
 		TOptional Value = 1;
 		auto AsVector = Value |
-			retro::ranges::to<std::vector>();
+			Retro::Ranges::To<std::vector>();
 		REQUIRE(AsVector.size() == 1);
 		CHECK(AsVector[0] == 1);
 
 		std::array<TOptional<int32>, 10> Array = {1, {}, 3, 4, 5, {}, {}, 6, {}, 8};
 		auto Joined = Array |
 			std::ranges::views::join |
-				retro::ranges::to<TArray>();
+				Retro::Ranges::To<TArray>();
 		REQUIRE(Joined.Num() == 6);
 	}
 }

@@ -2,7 +2,7 @@
 
 #pragma once
 
-namespace retro {
+namespace Retro {
 	/**
 	 * Used to check if the given type is an Unreal Interface
 	 * @param T The particular interface type

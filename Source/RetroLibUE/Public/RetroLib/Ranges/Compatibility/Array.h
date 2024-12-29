@@ -8,7 +8,7 @@
 #include <Containers/UnrealString.h>
 #include <ranges>
 
-namespace retro::ranges {
+namespace Retro::Ranges {
 
     template <typename C>
     struct TArraySize {
@@ -120,37 +120,37 @@ namespace retro::ranges {
         S InitialNum = 0;
     };
 
-} // namespace retro::ranges
+} // namespace Retro::Ranges
 
 template <typename T, typename A>
     requires(!std::input_iterator<decltype(std::declval<TArray<T, A>>().begin())>)
 constexpr auto begin(TArray<T, A> &Array) {
-    return retro::ranges::TArrayIterator<TArray<T, A>, T>(Array.GetData(), Array);
+    return Retro::Ranges::TArrayIterator<TArray<T, A>, T>(Array.GetData(), Array);
 }
 
 template <typename T, typename A>
     requires(!std::input_iterator<decltype(std::declval<const TArray<T, A>>().begin())>)
 constexpr auto begin(const TArray<T, A> &Array) {
-    return retro::ranges::TArrayIterator<const TArray<T, A>, const T>(Array.GetData(), Array);
+    return Retro::Ranges::TArrayIterator<const TArray<T, A>, const T>(Array.GetData(), Array);
 }
 
 template <typename T, typename A>
     requires(!std::input_iterator<decltype(std::declval<TArray<T, A>>().end())>)
 constexpr auto end(TArray<T, A> &Array) {
-    return retro::ranges::TArrayIterator<TArray<T, A>, T>(Array.GetData() + Array.Num(), Array);
+    return Retro::Ranges::TArrayIterator<TArray<T, A>, T>(Array.GetData() + Array.Num(), Array);
 }
 
 template <typename T, typename A>
     requires(!std::input_iterator<decltype(std::declval<const TArray<T, A>>().end())>)
 constexpr auto end(const TArray<T, A> &Array) {
-    return retro::ranges::TArrayIterator<const TArray<T, A>, const T>(Array.GetData() + Array.Num(), Array);
+    return Retro::Ranges::TArrayIterator<const TArray<T, A>, const T>(Array.GetData() + Array.Num(), Array);
 }
 
 constexpr auto begin(FString &String) {
     if constexpr (std::contiguous_iterator<decltype(String.begin())>) {
         return String.begin();
     } else {
-        return retro::ranges::TArrayIterator(String.GetCharArray().GetData(), String);
+        return Retro::Ranges::TArrayIterator(String.GetCharArray().GetData(), String);
     }
 }
 
@@ -158,7 +158,7 @@ constexpr auto begin(const FString &String) {
     if constexpr (std::contiguous_iterator<decltype(String.begin())>) {
         return String.begin();
     } else {
-        return retro::ranges::TArrayIterator(String.GetCharArray().GetData(), String);
+        return Retro::Ranges::TArrayIterator(String.GetCharArray().GetData(), String);
     }
 }
 
@@ -166,7 +166,7 @@ constexpr auto end(FString &String) {
     if constexpr (std::contiguous_iterator<decltype(String.end())>) {
         return String.end();
     } else {
-        return retro::ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
+        return Retro::Ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
     }
 }
 
@@ -174,6 +174,6 @@ constexpr auto end(const FString &String) {
     if constexpr (std::contiguous_iterator<decltype(String.end())>) {
         return String.end();
     } else {
-        return retro::ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
+        return Retro::Ranges::TArrayIterator(String.GetCharArray().GetData() + String.Len(), String);
     }
 }

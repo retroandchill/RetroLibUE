@@ -4,7 +4,7 @@
 
 #include <UObject/UObjectIterator.h>
 
-namespace retro::ranges {
+namespace Retro::Ranges {
 	
 	template <std::derived_from<UObject> T>
 	class TObjectView {
