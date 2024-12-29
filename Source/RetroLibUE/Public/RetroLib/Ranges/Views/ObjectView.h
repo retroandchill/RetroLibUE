@@ -8,9 +8,19 @@ namespace retro::ranges {
 	
 	template <std::derived_from<UObject> T>
 	class TObjectView {
-		struct Iterator {
+		struct FIterator {
 			using value_type = T*;
 			using difference_type = std::ptrdiff_t;
+
+			FIterator() = default;
+
+			FIterator(const FIterator&) = delete;
+			FIterator(FIterator&&) = default;
+
+			~FIterator() = default;
+			
+			FIterator& operator=(const FIterator&) = delete;
+			FIterator& operator=(FIterator&&) = default;
 
 			T* operator*() const {
 				return *Source;
@@ -24,7 +34,7 @@ namespace retro::ranges {
 				return static_cast<bool>(Source);
 			}
 
-			Iterator &operator++() {
+			FIterator &operator++() {
 				++Source;
 				return *this;
 			}
@@ -40,7 +50,7 @@ namespace retro::ranges {
 	public:
 		TObjectView() = default;
 
-		Iterator begin() const {
+		FIterator begin() const {
 			return Iterator();
 		}
 

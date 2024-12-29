@@ -8,9 +8,19 @@ namespace retro::ranges {
 	template <typename T>
 		requires std::derived_from<T, UObject> || UnrealInterface<T>
 	class TClassView {
-		struct Iterator {
+		struct FIterator {
 			using value_type = TSubclassOf<T>;
 			using difference_type = std::ptrdiff_t;
+
+			FIterator() = default;
+
+			FIterator(const FIterator&) = delete;
+			FIterator(FIterator&&) = default;
+
+			~FIterator() = default;
+			
+			FIterator& operator=(const FIterator&) = delete;
+			FIterator& operator=(FIterator&&) = default;
 
 			TSubclassOf<T> operator*() const {
 				return *Source;
@@ -24,7 +34,7 @@ namespace retro::ranges {
 				return static_cast<bool>(Source);
 			}
 
-			Iterator &operator++() requires std::derived_from<T, UObject> {
+			FIterator &operator++() requires std::derived_from<T, UObject> {
 				while (true) {
 					++Source;
 					if (!Source || Source->IsChildOf<T>()) {
@@ -35,7 +45,7 @@ namespace retro::ranges {
 				return *this;
 			}
 
-			Iterator &operator++() requires UnrealInterface<T> {
+			FIterator &operator++() requires UnrealInterface<T> {
 				while (true) {
 					++Source;
 					if (!Source || Source->ImplementsInterface(typename T::UClassType::StaticClass())) {
@@ -57,7 +67,7 @@ namespace retro::ranges {
 	public:
 		TClassView() = default;
 
-		Iterator begin() const {
+		FIterator begin() const {
 			return Iterator();
 		}
 
