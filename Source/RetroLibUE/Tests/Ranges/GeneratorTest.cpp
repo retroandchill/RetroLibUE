@@ -1,4 +1,4 @@
-﻿#if WITH_TESTS
+﻿#if WITH_TESTS && RETROLIB_WITH_COROUTINES
 
 #include "Tests/TestHarnessAdapter.h"
 #include "RetroLib/Ranges/Compatibility/Array.h"
