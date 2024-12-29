@@ -2,10 +2,12 @@
 
 #pragma once
 
-namespace retro {
-	/**
+#include "RetroLib/TypeTraits.h"
+
+namespace retro::delegates {
+    /**
      * Concept to check if a delegate is a native (single binding) delegate.
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
@@ -15,7 +17,7 @@ namespace retro {
 
     /**
      * Concept to check if a delegate is a dynamic (single binding) delegate.
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
@@ -24,7 +26,7 @@ namespace retro {
 
     /**
      * Concept to check if a delegate is a (single binding) delegate.
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
@@ -32,7 +34,7 @@ namespace retro {
 
     /**
      * Concept to check if a delegate is a native multicast delegate.
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
@@ -42,7 +44,7 @@ namespace retro {
 
     /**
      * Concept to check if a delegate is a dynamic multicast delegate.
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
@@ -51,7 +53,7 @@ namespace retro {
 
     /**
      * Concept to check if a delegate is a multicast delegate.
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
@@ -65,11 +67,58 @@ namespace retro {
 
     /**
      * Concept to check if a delegate is a Unreal Engine delegate type
-     * 
+     *
      * @tparam T The type to check if it's a delegate or not
      */
     template <typename T>
     concept UEDelegate = UnicastDelegate<T> || MulticastDelegate<T>;
+
+    template <NativeDelegate, typename, typename...>
+    struct TValidFreeBinding : InvalidType {};
+
+    template <NativeDelegate>
+    struct TDelegateBindingTraits;
+
+    template <typename R, typename... A, typename U>
+    struct TDelegateBindingTraits<TDelegate<R(A...), U>> {
+        template <typename F, typename... B>
+        static constexpr bool InvocableFree = std::is_invocable_r_v<R, F, A..., B...>;
+
+        template <typename O, typename F, typename... B>
+        static constexpr bool InvocableMember = std::is_invocable_r_v<R, F, O, A..., B...>;
+    };
+
+    template <typename... A, typename U>
+    struct TDelegateBindingTraits<TDelegate<void(A...), U>> {
+        template <typename F, typename... B>
+        static constexpr bool InvocableFree = std::is_invocable_v<F, A..., B...>;
+
+        template <typename O, typename F, typename... B>
+        static constexpr bool InvocableMember = std::is_invocable_v<F, O, A..., B...>;
+    };
+
+    template <typename... A, typename U>
+    struct TDelegateBindingTraits<TMulticastDelegate<void(A...), U>> {
+        template <typename F, typename... B>
+        static constexpr bool InvocableFree = std::is_invocable_v<F, A..., B...>;
+
+        template <typename O, typename F, typename... B>
+        static constexpr bool InvocableMember = std::is_invocable_v<F, O, A..., B...>;
+    };
+
+    template <typename>
+    struct TCanBindSp : std::false_type {};
+
+    template <typename T, ESPMode Mode>
+    struct TCanBindSp<TSharedRef<T, Mode>> : std::true_type {};
+
+    template <typename T>
+        requires std::is_base_of_v<TSharedFromThis<T>, T>
+    struct TCanBindSp<T *> : std::true_type {};
+
+    template <typename T>
+        requires std::is_base_of_v<TSharedFromThis<T>, T>
+    struct TCanBindSp<const T *> : std::true_type {};
 
     /**
      * Concept to check if a single-cast delegate is bindable to a target multicast delegate
@@ -78,4 +127,140 @@ namespace retro {
     concept BindableTo = MulticastDelegate<M> && UnicastDelegate<S> && requires(M &&Delegate, S &&Source) {
         { Delegate.Add(std::forward<S>(Source)) } -> std::same_as<FDelegateHandle>;
     };
-}
+
+    template <typename D, typename F, typename... A>
+    concept CanBindStatic = NativeUnicastDelegate<D> && TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+                            requires(D &Delegate, F &&Functor, A &&...Args) {
+                                Delegate.BindStatic(std::forward<F>(Functor), std::forward<A>(Args)...);
+                                {
+                                    D::CreateStatic(std::forward<F>(Functor), std::forward<A>(Args)...)
+                                } -> std::same_as<D>;
+                            };
+
+    template <typename D, typename F, typename... A>
+    concept CanBindLambda = NativeUnicastDelegate<D> && TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+                            requires(D &Delegate, F &&Functor, A &&...Args) {
+                                Delegate.BindLambda(std::forward<F>(Functor), std::forward<A>(Args)...);
+                                {
+                                    D::CreateLambda(std::forward<F>(Functor), std::forward<A>(Args)...)
+                                } -> std::same_as<D>;
+                            };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanBindRaw =
+        NativeUnicastDelegate<D> && TDelegateBindingTraits<D>::template InvocableMember<O, F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            Delegate.BindRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            {
+                D::CreateRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...)
+            } -> std::same_as<D>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanBindSP =
+        NativeUnicastDelegate<D> && TCanBindSp<std::decay_t<O>>::value &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            Delegate.BindSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            {
+                D::CreateSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...)
+            } -> std::same_as<D>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanBindSPLambda =
+        NativeUnicastDelegate<D> && TCanBindSp<std::decay_t<O>>::value &&
+        TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            Delegate.BindSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            {
+                D::CreateSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...)
+            } -> std::same_as<D>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanBindUObject =
+        NativeUnicastDelegate<D> && std::convertible_to<O, const UObject *> &&
+        TDelegateBindingTraits<D>::template InvocableMember<O, F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            Delegate.BindUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            {
+                D::CreateUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...)
+            } -> std::same_as<D>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanBindWeakLambda =
+        NativeUnicastDelegate<D> && TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            Delegate.BindWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...);
+            {
+                D::CreateWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...)
+            } -> std::same_as<D>;
+        };
+
+    template <typename D, typename F, typename... A>
+    concept CanBindFree = CanBindStatic<D, F, A...> || CanBindLambda<D, F, A...>;
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanBindMember =
+        CanBindSP<D, O, F, A...> || CanBindSPLambda<D, O, F, A...> || CanBindUObject<D, O, F, A...> ||
+        CanBindWeakLambda<D, O, F, A...> || CanBindRaw<D, O, F, A...>;
+
+    template <typename D, typename F, typename... A>
+    concept CanAddStatic = NativeMulitcastDelegate<D> && TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+                            requires(D &Delegate, F &&Functor, A &&...Args) {
+                                { Delegate.AddStatic(std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+                            };
+
+    template <typename D, typename F, typename... A>
+    concept CanAddLambda = NativeMulitcastDelegate<D> && TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+                            requires(D &Delegate, F &&Functor, A &&...Args) {
+        { Delegate.AddLambda(std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+                            };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanAddRaw =
+        NativeMulitcastDelegate<D> && TDelegateBindingTraits<D>::template InvocableMember<O, F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            { Delegate.AddRaw(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanAddSP =
+        NativeMulitcastDelegate<D> && TCanBindSp<std::decay_t<O>>::value &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            { Delegate.AddSP(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanAddSPLambda =
+        NativeMulitcastDelegate<D> && TCanBindSp<std::decay_t<O>>::value &&
+        TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            { Delegate.AddSPLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanAddUObject =
+        NativeMulitcastDelegate<D> && std::convertible_to<O, const UObject *> &&
+        TDelegateBindingTraits<D>::template InvocableMember<O, F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            {  Delegate.AddUObject(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+        };
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanAddWeakLambda =
+        NativeMulitcastDelegate<D> && TDelegateBindingTraits<D>::template InvocableFree<F, A...> &&
+        requires(D &Delegate, O &&Object, F &&Functor, A &&...Args) {
+            { Delegate.AddWeakLambda(std::forward<O>(Object), std::forward<F>(Functor), std::forward<A>(Args)...) } -> std::same_as<FDelegateHandle>;
+        };
+
+    template <typename D, typename F, typename... A>
+    concept CanAddFree = CanAddStatic<D, F, A...> || CanAddLambda<D, F, A...>;
+
+    template <typename D, typename O, typename F, typename... A>
+    concept CanAddMember =
+        CanAddSP<D, O, F, A...> || CanAddSPLambda<D, O, F, A...> || CanAddUObject<D, O, F, A...> ||
+        CanAddWeakLambda<D, O, F, A...> || CanAddRaw<D, O, F, A...>;
+    
+} // namespace retro
