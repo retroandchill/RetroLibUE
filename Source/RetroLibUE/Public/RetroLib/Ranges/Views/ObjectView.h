@@ -31,7 +31,7 @@ namespace Retro::Ranges {
 			}
 
 			bool operator==(const std::default_sentinel_t&) const {
-				return static_cast<bool>(Source);
+				return !Source;
 			}
 
 			FIterator &operator++() {

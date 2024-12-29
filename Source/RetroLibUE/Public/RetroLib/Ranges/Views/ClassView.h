@@ -12,7 +12,17 @@ namespace Retro::Ranges {
 			using value_type = std::conditional_t<std::derived_from<T, UObject>, TSubclassOf<T>, UClass*>;
 			using difference_type = std::ptrdiff_t;
 
-			FIterator() = default;
+			FIterator() {
+				if constexpr (UnrealInterface<T>) {
+					while (Source && !Source->ImplementsInterface(typename T::UClassType::StaticClass())) {
+						++Source;
+					}
+				} else {
+					while (Source && !Source->IsChildOf<T>()) {
+						++Source;
+					}
+				}
+			}
 
 			FIterator(const FIterator&) = delete;
 			FIterator(FIterator&&) = default;
@@ -35,7 +45,7 @@ namespace Retro::Ranges {
 			}
 
 			bool operator==(const std::default_sentinel_t&) const {
-				return static_cast<bool>(Source);
+				return !Source;
 			}
 
 			FIterator &operator++() requires std::derived_from<T, UObject> {
