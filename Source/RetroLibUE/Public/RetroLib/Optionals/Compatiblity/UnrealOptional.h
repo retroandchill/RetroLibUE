@@ -7,7 +7,7 @@
 #include "RetroLib/Optionals/OptionalOperations.h"
 #include "RetroLib/Utils/ForwardLike.h"
 
-namespace retro::optionals {
+namespace Retro::Optionals {
     template <typename T>
     concept UnrealOptional = requires(T &&Optional) {
         Optional.GetValue();
@@ -20,19 +20,19 @@ namespace retro::optionals {
     struct OptionalOperations<T> : ValidType {
         template <UnrealOptional O>
             requires std::same_as<T, std::decay_t<O>>
-        static constexpr decltype(auto) get(O &&Optional) {
-            return retro::forward_like<O>(*Optional);
+        static constexpr decltype(auto) Get(O &&Optional) {
+            return Retro::ForwardLike<O>(*Optional);
         }
 
         template <UnrealOptional O>
             requires std::same_as<T, std::decay_t<O>>
-        static constexpr decltype(auto) get_value(O &&Optional) {
-            return retro::forward_like<O>(Optional.GetValue());
+        static constexpr decltype(auto) GetValue(O &&Optional) {
+            return Retro::ForwardLike<O>(Optional.GetValue());
         }
 
         template <UnrealOptional O>
             requires std::same_as<T, std::decay_t<O>>
-        static constexpr bool has_value(const O &Optional) {
+        static constexpr bool HasValue(const O &Optional) {
             return Optional.IsSet();
         }
     };
@@ -193,16 +193,16 @@ struct TOptional<T &> {
 };
 
 template <>
-struct retro::optionals::IsRawReferenceOptionalAllowed<TOptional> : std::true_type {};
+struct Retro::Optionals::IsRawReferenceOptionalAllowed<TOptional> : std::true_type {};
 
 template <typename T>
 constexpr auto begin(TOptional<T>& Optional) {
-    return retro::optionals::OptionalIterator(Optional);
+    return Retro::Optionals::OptionalIterator(Optional);
 }
 
 template <typename T>
 constexpr auto begin(const TOptional<T>& Optional) {
-    return retro::optionals::OptionalIterator(Optional);
+    return Retro::Optionals::OptionalIterator(Optional);
 }
 
 template <typename T>
@@ -212,5 +212,5 @@ template <typename T>
 
 template <typename T>
 constexpr auto end(const TOptional<T>&) {
-    return retro::optionals::OptionalSentinel();
+    return Retro::Optionals::OptionalSentinel();
 }

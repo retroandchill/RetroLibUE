@@ -13,7 +13,7 @@ TEST_CASE_NAMED(FRangePipeTest, "RetroLib::Ranges::Compatibility", "[RetroLib][R
     SECTION("Can iterate over an instance of TArray") {
         static_assert(std::ranges::contiguous_range<TArray<int32>>);
         TArray Container = {1, 2, 3, 4, 5};
-        auto Transformed = Container | retro::ranges::views::transform([](int32 I) { return I * 2; });
+        auto Transformed = Container | Retro::Ranges::Views::Transform([](int32 I) { return I * 2; });
 
         int32 Sum = 0;
         for (auto I : Transformed) {
@@ -26,7 +26,7 @@ TEST_CASE_NAMED(FRangePipeTest, "RetroLib::Ranges::Compatibility", "[RetroLib][R
         static_assert(std::ranges::contiguous_range<TArrayView<int32>>);
         TArray Container = {1, 2, 3, 4, 5};
         TArrayView<int32> View = Container;
-        auto Transformed = View | retro::ranges::views::transform([](int32 I) { return I * 2; });
+        auto Transformed = View | Retro::Ranges::Views::Transform([](int32 I) { return I * 2; });
 
         int32 Sum = 0;
         for (auto I : Transformed) {
@@ -38,7 +38,7 @@ TEST_CASE_NAMED(FRangePipeTest, "RetroLib::Ranges::Compatibility", "[RetroLib][R
     SECTION("Can iterate over an instance of TSet") {
         static_assert(std::ranges::input_range<TSet<int32>>);
         TSet Container = {1, 2, 3, 4, 5};
-        auto Transformed = Container | retro::ranges::views::transform([](int32 I) { return I * 2; });
+        auto Transformed = Container | Retro::Ranges::Views::Transform([](int32 I) { return I * 2; });
 
         int32 Sum = 0;
         for (auto I : Transformed) {
@@ -49,10 +49,10 @@ TEST_CASE_NAMED(FRangePipeTest, "RetroLib::Ranges::Compatibility", "[RetroLib][R
 
     SECTION("Can iterate over an instance of TMap") {
         static_assert(std::ranges::input_range<TMap<int32, int32>>);
-        static_assert(retro::TupleLike<std::ranges::range_value_t<TMap<int32, int32>>>);
+        static_assert(Retro::TupleLike<std::ranges::range_value_t<TMap<int32, int32>>>);
         TMap<int32, int32> Container = {{1, 2}, {3, 4}, {5, 6}};
         auto Transformed =
-            Container | retro::ranges::views::values | retro::ranges::views::transform([](int32 I) { return I * 2; });
+            Container | Retro::Ranges::Views::Values | Retro::Ranges::Views::Transform([](int32 I) { return I * 2; });
 
         int32 Sum = 0;
         for (auto I : Transformed) {
@@ -65,20 +65,20 @@ TEST_CASE_NAMED(FRangePipeTest, "RetroLib::Ranges::Compatibility", "[RetroLib][R
 TEST_CASE_NAMED(FRangesToTest, "RetroLib::Ranges::To", "[RetroLib][Ranges]") {
     SECTION("Can convert a TArray to a TSet") {
         TArray Array = {1, 2, 3, 4, 5};
-        auto Set = Array | retro::ranges::to<TSet>();
+        auto Set = Array | Retro::Ranges::To<TSet>();
         CHECK(Set.Num() == 5);
     }
 
     SECTION("Can convert a vector to a TArray") {
         std::vector Vector = {1, 2, 3, 4, 5};
-        auto Array = Vector | retro::ranges::to<TArray>();
+        auto Array = Vector | Retro::Ranges::To<TArray>();
         CHECK(Array.Num() == 5);
         CHECK(Array.Max() == 5);
     }
 
     SECTION("Can enumerate a TArray into a TMap") {
         TArray Array = {1, 2, 3, 4, 5};
-        auto Map = Array | retro::ranges::views::enumerate | retro::ranges::to<TMap>();
+        auto Map = Array | Retro::Ranges::Views::Enumerate | Retro::Ranges::To<TMap>();
 
         CHECK(Map.Num() == 5);
     }
@@ -87,10 +87,10 @@ TEST_CASE_NAMED(FRangesToTest, "RetroLib::Ranges::To", "[RetroLib][Ranges]") {
         static_assert(std::ranges::contiguous_range<FStringView>);
         static_assert(std::ranges::contiguous_range<FString>);
         static_assert(std::ranges::sized_range<FString>);
-        static_assert(retro::ranges::ReservableContainer<FString>);
+        static_assert(Retro::Ranges::ReservableContainer<FString>);
         std::array Strings = {FStringView(TEXT("This")), FStringView(TEXT("is")), FStringView(TEXT("a")),
                               FStringView(TEXT("test."))};
-        auto Joined = Strings | retro::ranges::views::join_with(static_cast<TCHAR>(' ')) | retro::ranges::to<FString>();
+        auto Joined = Strings | Retro::Ranges::Views::JoinWith(static_cast<TCHAR>(' ')) | Retro::Ranges::To<FString>();
         CHECK(Joined == TEXT("This is a test."));
     }
 
@@ -98,7 +98,7 @@ TEST_CASE_NAMED(FRangesToTest, "RetroLib::Ranges::To", "[RetroLib][Ranges]") {
         std::array Strings = {FStringView(TEXT("1")), FStringView(TEXT("2")), FStringView(TEXT("3")),
                               FStringView(TEXT("4"))};
         auto Constraction = FStringView(TEXT(", "));
-        auto Joined = Strings | retro::ranges::views::join_with(Constraction) | retro::ranges::to<FString>();
+        auto Joined = Strings | Retro::Ranges::Views::JoinWith(Constraction) | Retro::Ranges::To<FString>();
         CHECK(Joined == TEXT("1, 2, 3, 4"));
     }
 }

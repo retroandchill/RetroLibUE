@@ -6,8 +6,8 @@
 #include "RetroLib/Functional/CreateBinding.h"
 #include "RetroLib/Functional/ExtensionMethods.h"
 
-namespace retro {
-    namespace delegates
+namespace Retro {
+    namespace Delegates
     {
         template <UEDelegate D>
         struct TDelegateInvoker {
@@ -35,16 +35,16 @@ namespace retro {
         TDelegateInvoker(D &&) -> TDelegateInvoker<std::decay_t<D>>;
     }
 
-    template <delegates::UEDelegate D>
+    template <Delegates::UEDelegate D>
     struct AdditionalBindingTypes<D> : ValidType {
-        template <delegates::UEDelegate F, typename... A>
+        template <Delegates::UEDelegate F, typename... A>
             requires std::same_as<D, std::decay_t<F>>
-        static constexpr auto bind(F &&Delegate, A &&... Args) {
-            return retro::bind_back(delegates::TDelegateInvoker(std::forward<F>(Delegate)), std::forward<A>(Args)...);
+        static constexpr auto Bind(F &&Delegate, A &&... Args) {
+            return Retro::BindBack(Delegates::TDelegateInvoker(std::forward<F>(Delegate)), std::forward<A>(Args)...);
         }
     };
 
-    namespace delegates {
+    namespace Delegates {
         template <UEDelegate D, typename F, typename... A>
             requires CanBindFree<D, F, A...>
         D Create(F &&Functor, A &&... Args) {
@@ -106,7 +106,7 @@ namespace retro {
             }
         };
 
-        constexpr auto Bind = extension_method<FDelegateBinder{}>;
+        constexpr auto Bind = ExtensionMethod<FDelegateBinder{}>;
 
         struct FDelegateAdder {
             template <MulticastDelegate D, UnicastDelegate O>
@@ -147,7 +147,7 @@ namespace retro {
             }
         };
 
-        constexpr auto Add = extension_method<FDelegateAdder{}>;
+        constexpr auto Add = ExtensionMethod<FDelegateAdder{}>;
     }
 
 } // namespace retro
